@@ -1,3 +1,4 @@
+// Coach API v2
 import { getSnapshot } from './snapshot.js'
 
 async function callClaude(system, messages, maxTokens = 1500) {
