@@ -1,7 +1,12 @@
-// Coach API v2
+// Coach API v3
 import { getSnapshot } from './snapshot.js'
 
 async function callClaude(messages, maxTokens = 1500) {
+  const body = {
+    model: 'claude-sonnet-4-6',
+    max_tokens: maxTokens,
+    messages,
+  }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -9,12 +14,7 @@ async function callClaude(messages, maxTokens = 1500) {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
-      max_tokens: maxTokens,
-      
-      messages,
-    }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`Anthropic API error ${res.status}: ${await res.text()}`)
   const data = await res.json()
@@ -98,7 +98,7 @@ Write a specific, actionable training session plan for today. Include:
 
 Be direct and specific. Use the programme context to tailor exercises to this athlete's level and goals. If readiness is low (HRV or body battery), adjust volume/intensity accordingly and explain why.`
 
-    const plan = await callClaude([{ role: "user", content: prompt }], 1500)
+    const plan = await callClaude([{ role: 'user', content: prompt }], 1500)
     res.json({ plan })
   } catch (e) {
     console.error('Coach error:', e)

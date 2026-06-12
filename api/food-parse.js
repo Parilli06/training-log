@@ -1,6 +1,8 @@
 export const config = { api: { bodyParser: false } }
 
 async function callClaude({ system, messages, model = 'claude-haiku-4-5-20251001', maxTokens = 400 }) {
+  const body = { model, max_tokens: maxTokens, messages }
+  if (system) body.system = system
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -8,7 +10,7 @@ async function callClaude({ system, messages, model = 'claude-haiku-4-5-20251001
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`Anthropic API error ${res.status}: ${await res.text()}`)
   const data = await res.json()
