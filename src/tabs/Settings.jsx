@@ -102,35 +102,39 @@ export default function Settings() {
     try {
       // Save schedule
       for (const day of schedule) {
-        await supabase.from('weekly_schedule').upsert({
+        const { error } = await supabase.from('weekly_schedule').upsert({
           day_of_week: day.day_of_week,
           display_name: day.display_name,
           workout_type: day.workout_type,
           macro_bucket: day.macro_bucket,
         }, { onConflict: 'day_of_week' })
+        if (error) throw new Error('Schedule: ' + error.message)
       }
 
       // Save nutrition targets
-      await supabase.from('nutrition_targets').upsert({
+      const { error: targetsError } = await supabase.from('nutrition_targets').upsert({
         id: 1,
         ...targets,
         updated_at: new Date().toISOString(),
       })
+      if (targetsError) throw new Error('Targets: ' + targetsError.message)
 
       // Save settings
-      await supabase.from('settings').upsert({
+      const { error: settingsError } = await supabase.from('settings').upsert({
         id: 1,
         key_lifts: lifts,
         weekly_alcohol_limit: parseFloat(weeklyAlcohol) || 14,
         updated_at: new Date().toISOString(),
       })
+      if (settingsError) throw new Error('Settings: ' + settingsError.message)
 
       // Save programme context
-      await supabase.from('programme_context').upsert({
+      const { error: ctxError } = await supabase.from('programme_context').upsert({
         id: 1,
         context: programmeContext,
         updated_at: new Date().toISOString(),
       })
+      if (ctxError) throw new Error('Context: ' + ctxError.message)
 
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
