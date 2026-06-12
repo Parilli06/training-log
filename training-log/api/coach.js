@@ -1,6 +1,6 @@
 import { getSnapshot } from './snapshot.js'
 
-async function callClaude(system, messages, maxTokens = 1500) {
+async function callClaude(messages, maxTokens = 1500) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -11,7 +11,6 @@ async function callClaude(system, messages, maxTokens = 1500) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
-      system,
       messages,
     }),
   })
@@ -33,7 +32,6 @@ export default async function handler(req, res) {
     const todayName = dayNames[new Date(today + 'T12:00:00').getDay()]
     const todaySchedule = snap.schedule.find((s) => s.day_of_week === todayName)
 
-    // Format recent sessions for context
     const recentSessions = snap.sessions.slice(0, 5).map((s) => {
       const exSummary = s.exercises?.slice(0, 4).map((ex) => {
         const topSet = ex.sets?.reduce((best, set) => {
@@ -45,7 +43,6 @@ export default async function handler(req, res) {
       return `${s.date} (${s.day_name}, RPE ${s.rpe || '?'}): ${exSummary}`
     }).join('\n')
 
-    // Format recent food
     const foodByDay = {}
     snap.food.forEach((f) => {
       if (!foodByDay[f.date]) foodByDay[f.date] = { calories: 0, protein: 0 }
@@ -97,7 +94,7 @@ Write a specific, actionable training session plan for today. Include:
 
 Be direct and specific. Use the programme context to tailor exercises to this athlete's level and goals. If readiness is low (HRV or body battery), adjust volume/intensity accordingly and explain why.`
 
-    const plan = await callClaude(null, [{ role: 'user', content: prompt }], 1500)
+    const plan = await callClaude([{ role: 'user', content: prompt }], 1500)
     res.json({ plan })
   } catch (e) {
     console.error('Coach error:', e)
