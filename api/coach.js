@@ -3,7 +3,7 @@ import { getSnapshot } from './snapshot.js'
 
 async function callClaude(messages, maxTokens = 1500) {
   const body = {
-    model: 'claude-sonnet-4-6',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: maxTokens,
     messages,
   }
