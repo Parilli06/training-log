@@ -1,12 +1,6 @@
-// Coach API v3
 import { getSnapshot } from './snapshot.js'
 
 async function callClaude(messages, maxTokens = 1500) {
-  const body = {
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: maxTokens,
-    messages,
-  }
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -14,7 +8,11 @@ async function callClaude(messages, maxTokens = 1500) {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      messages,
+    }),
   })
   if (!res.ok) throw new Error(`Anthropic API error ${res.status}: ${await res.text()}`)
   const data = await res.json()
