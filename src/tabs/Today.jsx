@@ -39,13 +39,17 @@ function MacroBar({ label, current, target, color }) {
 
 function inlineMarkdown(text) {
   const parts = []
-  const boldRegex = /\*\*(.+?)\*\*/g
+  const regex = /\*\*(.+?)\*\*|`(.+?)`/g
   let lastIdx = 0
   let m
-  while ((m = boldRegex.exec(text)) !== null) {
+  while ((m = regex.exec(text)) !== null) {
     if (m.index > lastIdx) parts.push(text.slice(lastIdx, m.index))
-    parts.push(<strong key={m.index} className="text-white font-semibold">{m[1]}</strong>)
-    lastIdx = boldRegex.lastIndex
+    if (m[1] !== undefined) {
+      parts.push(<strong key={m.index} className="text-white font-semibold">{m[1]}</strong>)
+    } else {
+      parts.push(<code key={m.index} className="bg-white/10 text-brand px-1 rounded text-xs font-mono">{m[2]}</code>)
+    }
+    lastIdx = regex.lastIndex
   }
   if (lastIdx < text.length) parts.push(text.slice(lastIdx))
   return parts.length === 0 ? text : parts
@@ -96,6 +100,14 @@ function renderMarkdown(text) {
         <div key={i} className="flex items-start gap-2 my-0.5">
           <span className="text-brand mt-1 text-xs leading-none">•</span>
           <span className="text-sm text-gray-200">{inlineMarkdown(line.slice(2))}</span>
+        </div>
+      )
+    } else if (/^\d+\.\s/.test(line)) {
+      const num = line.match(/^(\d+)\./)[1]
+      result.push(
+        <div key={i} className="flex items-start gap-2 my-0.5">
+          <span className="text-brand mt-0.5 text-xs font-semibold min-w-[1.25rem]">{num}.</span>
+          <span className="text-sm text-gray-200">{inlineMarkdown(line.replace(/^\d+\.\s/, ''))}</span>
         </div>
       )
     } else if (line.trim() === '') {
