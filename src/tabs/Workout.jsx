@@ -151,6 +151,9 @@ function SessionView({ session, onSave, onClose }) {
   const [saving, setSaving] = useState(false)
   const [review, setReview] = useState(null)
   const [reviewLoading, setReviewLoading] = useState(false)
+  const [photos, setPhotos] = useState(session.photos || [])
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoRef = useRef()
 
   const addExercise = () => {
     setExercises([...exercises, {
@@ -158,6 +161,33 @@ function SessionView({ session, onSave, onClose }) {
       sets: [{ setNum: 1, weight: '', reps: '', completed: false }],
       rpe: '',
     }])
+  }
+
+  const handleAddPhoto = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setPhotoUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `${session.id || crypto.randomUUID()}/${Date.now()}.${ext}`
+      const { data, error } = await supabase.storage
+        .from('workout-photos')
+        .upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage
+        .from('workout-photos')
+        .getPublicUrl(data.path)
+      setPhotos((prev) => [...prev, publicUrl])
+    } catch (err) {
+      alert('Photo upload failed: ' + err.message)
+    } finally {
+      setPhotoUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const removePhoto = (url) => {
+    setPhotos((prev) => prev.filter((p) => p !== url))
   }
 
   const handleSave = async () => {
@@ -171,6 +201,7 @@ function SessionView({ session, onSave, onClose }) {
       exercises: exercises,
       notes,
       rpe: sessionRpe ? parseFloat(sessionRpe) : null,
+      photos,
       created_at: new Date().toISOString(),
     }
     await supabase.from('sessions').upsert(payload)
@@ -250,6 +281,52 @@ function SessionView({ session, onSave, onClose }) {
         />
       </div>
 
+      {/* Photos */}
+      <div className="bg-surface rounded-2xl p-4 space-y-3">
+        <h3 className="text-xs text-gray-500 uppercase tracking-widest">Photos</h3>
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((url, i) => (
+              <div key={i} className="relative group aspect-square">
+                <img
+                  src={url}
+                  alt="Workout photo"
+                  className="w-full h-full object-cover rounded-xl"
+                />
+                <button
+                  onClick={() => removePhoto(url)}
+                  className="absolute top-1 right-1 bg-black/70 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          ref={photoRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleAddPhoto}
+        />
+        <button
+          onClick={() => photoRef.current?.click()}
+          disabled={photoUploading}
+          className="w-full border border-white/20 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {photoUploading ? (
+            <>
+              <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              Uploading…
+            </>
+          ) : (
+            <>📸 Add photo</>
+          )}
+        </button>
+      </div>
+
       {/* AI Review */}
       <div className="bg-surface rounded-2xl p-4 space-y-3">
         <h3 className="text-xs text-gray-500 uppercase tracking-widest">AI Review</h3>
@@ -311,6 +388,7 @@ export default function Workout() {
       })),
       notes: '',
       rpe: '',
+      photos: [],
     })
     setView('session')
   }
@@ -326,7 +404,7 @@ export default function Workout() {
       const res = await fetch('/api/food-parse', { method: 'POST', body: formData })
       const data = await res.json()
       if (data.session) {
-        setActiveSession({ ...data.session, id: crypto.randomUUID(), date: today() })
+        setActiveSession({ ...data.session, id: crypto.randomUUID(), date: today(), photos: [] })
         setView('session')
       }
     } catch (e) {
@@ -421,6 +499,7 @@ export default function Workout() {
                 <div className="text-right">
                   {s.rpe && <p className="text-sm text-gray-400">RPE {s.rpe}</p>}
                   <p className="text-xs text-gray-600">{s.exercises?.length || 0} exercises</p>
+                  {s.photos?.length > 0 && <p className="text-xs text-gray-600">📸 {s.photos.length}</p>}
                 </div>
               </div>
             </div>
