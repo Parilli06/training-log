@@ -307,7 +307,6 @@ function SessionView({ session, onSave, onClose }) {
           ref={photoRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={handleAddPhoto}
         />
