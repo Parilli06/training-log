@@ -201,7 +201,7 @@ export default function Food() {
         </div>
 
         <div className="flex gap-2">
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={parsePhoto} />
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={parsePhoto} />
           <button
             onClick={() => fileRef.current?.click()}
             disabled={parsing}
