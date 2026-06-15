@@ -66,7 +66,7 @@ function SetRow({ set, onChange, onRemove }) {
         placeholder="kg"
         className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand/50"
       />
-      <span className="text-gray-600 text-xs">×</span>
+      <span className="text-gray-600 text-xs">x</span>
       <input
         type="number"
         value={set.reps || ''}
@@ -74,7 +74,7 @@ function SetRow({ set, onChange, onRemove }) {
         placeholder="reps"
         className="w-14 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand/50"
       />
-      <button onClick={onRemove} className="ml-auto text-gray-600 hover:text-red-400 text-lg leading-none">×</button>
+      <button onClick={onRemove} className="ml-auto text-gray-600 hover:text-red-400 text-lg leading-none">x</button>
     </div>
   )
 }
@@ -128,7 +128,7 @@ function ExerciseCard({ exercise, onUpdate, onRemove }) {
             max="10"
             value={exercise.rpe || ''}
             onChange={(e) => onUpdate({ ...exercise, rpe: e.target.value })}
-            placeholder="—"
+            placeholder="--"
             className="w-12 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand/50"
           />
         </div>
@@ -153,7 +153,8 @@ function SessionView({ session, onSave, onClose }) {
   const [reviewLoading, setReviewLoading] = useState(false)
   const [photos, setPhotos] = useState(session.photos || [])
   const [photoUploading, setPhotoUploading] = useState(false)
-  const photoRef = useRef()
+  const galleryRef = useRef()
+  const filesRef = useRef()
 
   const addExercise = () => {
     setExercises([...exercises, {
@@ -168,8 +169,9 @@ function SessionView({ session, onSave, onClose }) {
     if (!file) return
     setPhotoUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const path = `${session.id || crypto.randomUUID()}/${Date.now()}.${ext}`
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const safeName = `${Date.now()}.${ext}`
+      const path = `${session.id || crypto.randomUUID()}/${safeName}`
       const { data, error } = await supabase.storage
         .from('workout-photos')
         .upload(path, file, { upsert: true })
@@ -179,7 +181,7 @@ function SessionView({ session, onSave, onClose }) {
         .getPublicUrl(data.path)
       setPhotos((prev) => [...prev, publicUrl])
     } catch (err) {
-      alert('Photo upload failed: ' + err.message)
+      alert('Upload failed: ' + err.message)
     } finally {
       setPhotoUploading(false)
       e.target.value = ''
@@ -230,7 +232,7 @@ function SessionView({ session, onSave, onClose }) {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button onClick={onClose} className="text-gray-400 hover:text-white">
-          ← Back
+          Back
         </button>
         <h2 className="font-bold text-lg flex-1">{session.day_name || 'Session'}</h2>
         <button
@@ -238,7 +240,7 @@ function SessionView({ session, onSave, onClose }) {
           disabled={saving}
           className="bg-brand text-black font-bold px-4 py-2 rounded-xl text-sm disabled:opacity-50"
         >
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -269,19 +271,18 @@ function SessionView({ session, onSave, onClose }) {
             max="10"
             value={sessionRpe}
             onChange={(e) => setSessionRpe(e.target.value)}
-            placeholder="1–10"
+            placeholder="1-10"
             className="w-16 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand/50"
           />
         </div>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Session notes…"
+          placeholder="Session notes..."
           className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white placeholder:text-gray-600 resize-none h-20 focus:outline-none focus:border-brand/50"
         />
       </div>
 
-      {/* Photos */}
       <div className="bg-surface rounded-2xl p-4 space-y-3">
         <h3 className="text-xs text-gray-500 uppercase tracking-widest">Photos</h3>
         {photos.length > 0 && (
@@ -297,36 +298,33 @@ function SessionView({ session, onSave, onClose }) {
                   onClick={() => removePhoto(url)}
                   className="absolute top-1 right-1 bg-black/70 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
-                  ×
+                  x
                 </button>
               </div>
             ))}
           </div>
         )}
-        <input
-          ref={photoRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleAddPhoto}
-        />
-        <button
-          onClick={() => photoRef.current?.click()}
-          disabled={photoUploading}
-          className="w-full border border-white/20 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {photoUploading ? (
-            <>
-              <div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-              Uploading…
-            </>
-          ) : (
-            <>📸 Add photo</>
-          )}
-        </button>
+        <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={handleAddPhoto} />
+        <input ref={filesRef} type="file" className="hidden" onChange={handleAddPhoto} />
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => galleryRef.current?.click()}
+            disabled={photoUploading}
+            className="border border-white/20 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            {photoUploading ? '...' : '📷 Gallery'}
+          </button>
+          <button
+            onClick={() => filesRef.current?.click()}
+            disabled={photoUploading}
+            className="border border-white/20 text-gray-400 hover:text-white py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            {photoUploading ? '...' : '📂 Browse files'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-600 text-center">Use "Browse files" to upload screenshots</p>
       </div>
 
-      {/* AI Review */}
       <div className="bg-surface rounded-2xl p-4 space-y-3">
         <h3 className="text-xs text-gray-500 uppercase tracking-widest">AI Review</h3>
         {!review && !reviewLoading && (
@@ -334,13 +332,13 @@ function SessionView({ session, onSave, onClose }) {
             onClick={handleReview}
             className="w-full border border-brand/40 text-brand font-medium py-2.5 rounded-xl text-sm hover:bg-brand/10 transition-colors"
           >
-            🤖 Review this session
+            Review this session
           </button>
         )}
         {reviewLoading && (
           <div className="flex items-center gap-3 py-2">
             <div className="w-4 h-4 border-2 border-brand border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-gray-400">Reviewing…</span>
+            <span className="text-sm text-gray-400">Reviewing...</span>
           </div>
         )}
         {review && (
@@ -352,7 +350,7 @@ function SessionView({ session, onSave, onClose }) {
 }
 
 export default function Workout() {
-  const [view, setView] = useState('log') // 'log' | 'calendar' | 'session'
+  const [view, setView] = useState('log')
   const [activeSession, setActiveSession] = useState(null)
   const [pastSessions, setPastSessions] = useState([])
   const [photoLoading, setPhotoLoading] = useState(false)
@@ -467,13 +465,13 @@ export default function Workout() {
           <section className="bg-surface rounded-2xl p-4 space-y-3">
             <h2 className="text-xs text-gray-500 uppercase tracking-widest">Import from Photo</h2>
             <p className="text-xs text-gray-500">Take a photo of a whiteboard or handwritten session plan and Claude will parse it.</p>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhotoImport} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoImport} />
             <button
               onClick={() => fileRef.current?.click()}
               disabled={photoLoading}
               className="w-full border border-white/20 text-white py-2.5 rounded-xl text-sm hover:bg-white/5 transition-colors disabled:opacity-50"
             >
-              {photoLoading ? '⏳ Parsing…' : '📷 Import from photo'}
+              {photoLoading ? 'Parsing...' : 'Import from photo'}
             </button>
           </section>
         </>
@@ -498,7 +496,7 @@ export default function Workout() {
                 <div className="text-right">
                   {s.rpe && <p className="text-sm text-gray-400">RPE {s.rpe}</p>}
                   <p className="text-xs text-gray-600">{s.exercises?.length || 0} exercises</p>
-                  {s.photos?.length > 0 && <p className="text-xs text-gray-600">📸 {s.photos.length}</p>}
+                  {s.photos?.length > 0 && <p className="text-xs text-gray-600">{s.photos.length} photos</p>}
                 </div>
               </div>
             </div>
